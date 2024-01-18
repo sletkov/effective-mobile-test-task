@@ -12,15 +12,22 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/sletkov/effective-mobile-test-task/internal/model"
-	"github.com/sletkov/effective-mobile-test-task/internal/service"
 )
 
+type UserService interface {
+	Get(ctx context.Context, userFilter *model.UserFilter) ([]model.User, error)
+	Delete(ctx context.Context, id uint) error
+	Update(ctx context.Context, id uint, u *model.User) error
+	Create(ctx context.Context, u *model.User) error
+	GetById(ctx context.Context, id uint) (*model.User, error)
+}
+
 type UserController struct {
-	service service.UserService
+	service UserService
 	logger  slog.Logger
 }
 
-func New(service service.UserService, logger slog.Logger) *UserController {
+func New(service UserService, logger slog.Logger) *UserController {
 	return &UserController{
 		service: service,
 		logger:  logger,
