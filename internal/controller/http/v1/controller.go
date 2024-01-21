@@ -214,7 +214,7 @@ func (c *UserController) handleCreateUser(ctx context.Context) http.HandlerFunc 
 
 		if err != nil {
 			slog.Error(err.Error())
-			w.WriteHeader(http.StatusInternalServerError)
+			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 

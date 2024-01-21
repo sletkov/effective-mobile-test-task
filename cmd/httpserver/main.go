@@ -10,18 +10,22 @@ import (
 )
 
 var (
-	configPath string
+	configPath     string
+	makeMigrations bool
+	dropMigrations bool
 )
 
 func init() {
 	flag.StringVar(&configPath, "config-path", ".env", "config path")
+	flag.BoolVar(&makeMigrations, "make-migrations", false, "make migrations")
+	flag.BoolVar(&dropMigrations, "drop-migrations", false, "rollback migrations")
 
 	flag.Parse()
 }
 
 func main() {
 	// Run server
-	err := app.Run(configPath)
+	err := app.Run(configPath, makeMigrations, dropMigrations)
 
 	if err != nil {
 		slog.Error(err.Error())

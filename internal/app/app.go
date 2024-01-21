@@ -21,7 +21,8 @@ import (
 )
 
 // Run application
-func Run(configPath string) error {
+func Run(configPath string, makeMigrations, dropMigrations bool) error {
+
 	// Initialize logger
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
@@ -40,7 +41,7 @@ func Run(configPath string) error {
 		return fmt.Errorf("reading config: %w", err)
 	}
 
-	// Initializa database
+	// Initialize database
 	slog.Debug("initializing database...")
 	db, err := initDB(config.DatabaseURL)
 
@@ -48,11 +49,21 @@ func Run(configPath string) error {
 		return fmt.Errorf("initializing db: %w", err)
 	}
 
-	// Make migrations
-	slog.Debug("making migrations...")
+	// Migrations control
+	if makeMigrations {
+		// Make migrations
+		slog.Debug("making migrations...")
 
-	if err := goose.Up(db, "migrations"); err != nil {
-		return fmt.Errorf("making migrations: %w", err)
+		if err := goose.Up(db, "migrations"); err != nil {
+			return fmt.Errorf("making migrations: %w", err)
+		}
+	} else if dropMigrations {
+		// Rollback migrations
+		slog.Debug("rollback migrations...")
+
+		if err := goose.Down(db, "migrations"); err != nil {
+			return fmt.Errorf("making migrations: %w", err)
+		}
 	}
 
 	repo := postgres.New(db)
@@ -66,6 +77,7 @@ func Run(configPath string) error {
 	router := controller.InitRoutes(context.Background())
 
 	slog.Debug("starting server...")
+
 	return http.ListenAndServe(net.JoinHostPort(config.Host, config.Port), router)
 }
 
