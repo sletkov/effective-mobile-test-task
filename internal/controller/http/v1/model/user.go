@@ -9,6 +9,21 @@ type User struct {
 	Id          int    `json:"id"`
 	Name        string `json:"name"`
 	Surname     string `json:"surname"`
+	Patronymic  string `json:"patronymic"`
+	Age         int    `json:"age"`
+	Gender      string `json:"gender"`
+	Nationality string `json:"nationality"`
+}
+
+type CreateUser struct {
+	Name       string `json:"name"`
+	Surname    string `json:"surname"`
+	Patronymic string `json:"patronymic,omitempty"`
+}
+
+type UpdateUser struct {
+	Name        string `json:"name"`
+	Surname     string `json:"surname"`
 	Patronymic  string `json:"patronymic,omitempty"`
 	Age         int    `json:"age"`
 	Gender      string `json:"gender"`
@@ -24,15 +39,6 @@ type UserFilter struct {
 	Gender      string
 	Nationality string
 	Limit       int
-}
-
-type UpdateUser struct {
-	Name        string `json:"name"`
-	Surname     string `json:"surname"`
-	Patronymic  string `json:"patronymic,omitempty"`
-	Age         int    `json:"age"`
-	Gender      string `json:"gender"`
-	Nationality string `json:"nationality"`
 }
 
 func (u *UpdateUser) Copy(user *User) {
@@ -61,15 +67,10 @@ func (u *UpdateUser) Copy(user *User) {
 	}
 }
 
-func (u *User) Validate() error {
-	return validation.ValidateStruct(
-		u,
-		validation.Field(&u.Id, validation.Min(0), validation.Required, is.Digit),
-		validation.Field(u.Name, validation.Required, is.Alpha),
-		validation.Field(u.Surname, validation.Required, is.Alpha),
-		validation.Field(u.Patronymic, is.Alpha),
-		validation.Field(u.Age, validation.Required, validation.Min(0), is.Digit),
-		validation.Field(u.Gender, validation.Required, is.Alpha),
-		validation.Field(u.Nationality, validation.Required, is.Alpha),
+func (u *CreateUser) Validate() error {
+	return validation.ValidateStruct(u,
+		validation.Field(&u.Name, validation.Required, validation.Length(1, 255), is.Alpha),
+		validation.Field(&u.Surname, validation.Required, validation.Length(1, 255), is.Alpha),
+		validation.Field(&u.Patronymic, validation.Length(0, 255), is.Alpha),
 	)
 }

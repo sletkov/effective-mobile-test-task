@@ -3,7 +3,6 @@ package v1
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -11,15 +10,17 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"github.com/sletkov/effective-mobile-test-task/internal/model"
+	"github.com/sletkov/effective-mobile-test-task/internal/controller/http/v1/converter"
+	"github.com/sletkov/effective-mobile-test-task/internal/controller/http/v1/model"
+	serviceModel "github.com/sletkov/effective-mobile-test-task/internal/service/model"
 )
 
 type UserService interface {
-	Get(ctx context.Context, userFilter *model.UserFilter) ([]model.User, error)
-	Delete(ctx context.Context, id uint) error
-	Update(ctx context.Context, id uint, u *model.User) error
-	Create(ctx context.Context, u *model.User) error
-	GetById(ctx context.Context, id uint) (*model.User, error)
+	Get(ctx context.Context, userFilter *serviceModel.UserFilter) ([]serviceModel.User, error)
+	Delete(ctx context.Context, id int) error
+	Update(ctx context.Context, id int, u *serviceModel.User) error
+	Create(ctx context.Context, u *serviceModel.User) error
+	GetById(ctx context.Context, id int) (*serviceModel.User, error)
 }
 
 type UserController struct {
@@ -60,40 +61,48 @@ func (c *UserController) InitRoutes(ctx context.Context) chi.Router {
 // Get all users with filters and limit
 func (c *UserController) handleGetUsers(ctx context.Context, r chi.Router) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		users := make([]model.User, 0)
+
 		defaultLimit := 10
 		userFilter := &model.UserFilter{}
 
 		values := r.URL.Query()
 
 		for k, v := range values {
-			switch k {
-			case "name":
-				userFilter.Name = v[0]
-			case "surname":
-				userFilter.Surname = v[0]
-			case "patronymic":
-				userFilter.Patronymic = v[0]
-			case "age_from":
-				value, _ := strconv.Atoi(v[0])
-				userFilter.AgeFrom = uint8(value)
-			case "age_to":
-				value, _ := strconv.Atoi(v[0])
-				userFilter.AgeTo = uint8(value)
-			case "gender":
-				userFilter.Gender = v[0]
-			case "nationality":
-				userFilter.Nationality = v[0]
-			case "limit":
-				value, _ := strconv.Atoi(v[0])
-				userFilter.Limit = uint8(value)
+			if len(v) > 0 {
+				switch k {
+				case "name":
+					userFilter.Name = v[0]
+				case "surname":
+					userFilter.Surname = v[0]
+				case "patronymic":
+					userFilter.Patronymic = v[0]
+				case "age_from":
+					value, _ := strconv.Atoi(v[0])
+					userFilter.AgeFrom = value
+				case "age_to":
+					value, _ := strconv.Atoi(v[0])
+					userFilter.AgeTo = value
+				case "gender":
+					userFilter.Gender = v[0]
+				case "nationality":
+					userFilter.Nationality = v[0]
+				case "limit":
+					value, _ := strconv.Atoi(v[0])
+					userFilter.Limit = value
+				}
 			}
 		}
 
 		if userFilter.Limit <= 0 {
-			userFilter.Limit = uint8(defaultLimit)
+			userFilter.Limit = defaultLimit
 		}
 
-		users, err := c.service.Get(ctx, userFilter)
+		serviceUsers, err := c.service.Get(ctx, converter.ToUserFilterFromController(userFilter))
+
+		for _, u := range serviceUsers {
+			users = append(users, *converter.ToUserFromService(&u))
+		}
 
 		if err != nil {
 			c.logger.Error(err.Error())
@@ -125,7 +134,7 @@ func (c *UserController) handleDeleteUser(ctx context.Context) http.HandlerFunc 
 			return
 		}
 
-		if err := c.service.Delete(ctx, uint(id)); err != nil {
+		if err := c.service.Delete(ctx, id); err != nil {
 			c.logger.Error(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -145,7 +154,6 @@ func (c *UserController) handleUpdateUser(ctx context.Context) http.HandlerFunc 
 
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Println(err)
 			return
 		}
 
@@ -158,7 +166,6 @@ func (c *UserController) handleUpdateUser(ctx context.Context) http.HandlerFunc 
 		}
 
 		err = json.Unmarshal(data, &updateUser)
-		fmt.Println(updateUser)
 
 		if err != nil {
 			c.logger.Error(err.Error())
@@ -166,7 +173,10 @@ func (c *UserController) handleUpdateUser(ctx context.Context) http.HandlerFunc 
 			return
 		}
 
-		user, err := c.service.GetById(ctx, uint(id))
+		u, err := c.service.GetById(ctx, id)
+
+		// Convert from service to controller
+		user := converter.ToUserFromService(u)
 
 		if err != nil {
 			c.logger.Error(err.Error())
@@ -176,7 +186,7 @@ func (c *UserController) handleUpdateUser(ctx context.Context) http.HandlerFunc 
 
 		updateUser.Copy(user)
 
-		if err := c.service.Update(ctx, uint(id), user); err != nil {
+		if err := c.service.Update(ctx, id, converter.ToUserFromController(user)); err != nil {
 			c.logger.Error(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -189,7 +199,7 @@ func (c *UserController) handleUpdateUser(ctx context.Context) http.HandlerFunc 
 // Create user
 func (c *UserController) handleCreateUser(ctx context.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var user model.User
+		var user model.CreateUser
 
 		data, err := io.ReadAll(r.Body)
 
@@ -207,7 +217,16 @@ func (c *UserController) handleCreateUser(ctx context.Context) http.HandlerFunc 
 			return
 		}
 
-		if err := c.service.Create(ctx, &user); err != nil {
+		// Validate struct
+		err = user.Validate()
+
+		if err != nil {
+			c.logger.Error(err.Error())
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		if err := c.service.Create(ctx, converter.ToCreateUserFromController(&user)); err != nil {
 			c.logger.Error(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			return

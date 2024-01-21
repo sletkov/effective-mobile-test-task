@@ -39,7 +39,7 @@ func Run(config *config.Config) error {
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
-	controller := v1.New(*service, *logger)
+	controller := v1.New(service, *logger)
 
 	router := controller.InitRoutes(context.Background())
 

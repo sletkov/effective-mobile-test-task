@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/sletkov/effective-mobile-test-task/internal/model"
+	"github.com/sletkov/effective-mobile-test-task/internal/repository/postgres/model"
 )
 
 type UserRepository struct {
@@ -19,12 +19,13 @@ func New(db *sql.DB) *UserRepository {
 	}
 }
 
+// Get all users with filters and limit
 func (r *UserRepository) Get(ctx context.Context, userFilter *model.UserFilter) ([]model.User, error) {
 	var users []model.User
 	user := model.User{}
 	filters := userFilter.GetFilterRequest()
 
-	query := fmt.Sprintf("SELECT * FROM users WHERE %s LIMIT %d", filters, userFilter.Limit)
+	query := fmt.Sprintf("SELECT id, name, surname, patronymic, age, gender, nationality FROM users WHERE %s LIMIT %d", filters, userFilter.Limit)
 
 	rows, err := r.db.QueryContext(
 		ctx,
@@ -32,7 +33,7 @@ func (r *UserRepository) Get(ctx context.Context, userFilter *model.UserFilter) 
 	)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getting all users: %w", err)
 	}
 
 	defer rows.Close()
@@ -49,7 +50,7 @@ func (r *UserRepository) Get(ctx context.Context, userFilter *model.UserFilter) 
 		)
 
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("getting all users: %w", err)
 		}
 
 		users = append(users, user)
@@ -58,19 +59,21 @@ func (r *UserRepository) Get(ctx context.Context, userFilter *model.UserFilter) 
 	return users, nil
 }
 
-func (r *UserRepository) Delete(ctx context.Context, id uint) error {
+// Delete user by id
+func (r *UserRepository) Delete(ctx context.Context, id int) error {
 	if _, err := r.db.ExecContext(
 		ctx,
 		"DELETE FROM users WHERE id = $1",
 		id,
 	); err != nil {
-		return err
+		return fmt.Errorf("deleting user %d: %w", id, err)
 	}
 
 	return nil
 }
 
-func (r *UserRepository) Update(ctx context.Context, id uint, u *model.User) error {
+// Update user
+func (r *UserRepository) Update(ctx context.Context, id int, u *model.User) error {
 	if _, err := r.db.ExecContext(
 		ctx,
 		"UPDATE users SET name = $1, surname = $2, patronymic = $3, age = $4, gender = $5, nationality = $6 WHERE id = $7",
@@ -82,14 +85,15 @@ func (r *UserRepository) Update(ctx context.Context, id uint, u *model.User) err
 		u.Nationality,
 		id,
 	); err != nil {
-		return err
+		return fmt.Errorf("updating user %d: %w", id, err)
 	}
 
 	return nil
 }
 
-func (r *UserRepository) Create(ctx context.Context, u *model.User) (uint, error) {
-	var id uint
+// Create new user
+func (r *UserRepository) Create(ctx context.Context, u *model.User) (int, error) {
+	var id int
 	if err := r.db.QueryRowContext(
 		ctx,
 		"INSERT INTO users (name, surname, patronymic, age, gender, nationality) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
@@ -100,18 +104,19 @@ func (r *UserRepository) Create(ctx context.Context, u *model.User) (uint, error
 		u.Gender,
 		u.Nationality,
 	).Scan(&id); err != nil {
-		return 0, err
+		return 0, fmt.Errorf("creating user %d: %w", id, err)
 	}
 
 	return id, nil
 }
 
-func (r *UserRepository) GetUserById(ctx context.Context, id uint) (*model.User, error) {
+// Get user by id
+func (r *UserRepository) GetUserById(ctx context.Context, id int) (*model.User, error) {
 	user := &model.User{}
 
 	if err := r.db.QueryRowContext(
 		ctx,
-		"SELECT * FROM users WHERE id = $1",
+		"SELECT id, name, surname, patronymic, age, gender, nationality FROM users WHERE id = $1",
 		id,
 	).Scan(
 		&user.Id,
@@ -125,7 +130,6 @@ func (r *UserRepository) GetUserById(ctx context.Context, id uint) (*model.User,
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, model.ErrUserNotFound
 		}
-		fmt.Println("scan error")
 		return nil, err
 	}
 

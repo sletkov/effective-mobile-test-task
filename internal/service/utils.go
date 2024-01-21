@@ -2,19 +2,18 @@ package service
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 
-	"github.com/sletkov/effective-mobile-test-task/internal/model"
+	"github.com/sletkov/effective-mobile-test-task/internal/service/model"
 )
 
 // Add age to user by data from 3rd-party api response
-func agify(ageResponse *http.Response, u *model.User) error {
+func Agify(ageResponse *http.Response, u *model.User) error {
 	var ageInfo = struct {
 		Count int    `json:"count"`
 		Name  string `json:"name"`
-		Age   uint8  `json:"age"`
+		Age   int    `json:"age"`
 	}{}
 
 	data, err := io.ReadAll(ageResponse.Body)
@@ -24,7 +23,6 @@ func agify(ageResponse *http.Response, u *model.User) error {
 	}
 
 	if err := json.Unmarshal(data, &ageInfo); err != nil {
-		fmt.Println(err)
 		return err
 	}
 
@@ -34,7 +32,7 @@ func agify(ageResponse *http.Response, u *model.User) error {
 }
 
 // Add gender to user by data from 3rd-party api response
-func genderize(genderResponse *http.Response, u *model.User) error {
+func Genderize(genderResponse *http.Response, u *model.User) error {
 	var genderInfo = struct {
 		Count       int     `json:"count"`
 		Name        string  `json:"name"`
@@ -58,7 +56,7 @@ func genderize(genderResponse *http.Response, u *model.User) error {
 }
 
 // Add nationality to user by data from 3rd-party api response
-func nationalize(genderResponse *http.Response, u *model.User) error {
+func Nationalize(genderResponse *http.Response, u *model.User) error {
 	var nationalityInfo = struct {
 		Count   int    `json:"count"`
 		Name    string `json:"name"`
@@ -78,7 +76,6 @@ func nationalize(genderResponse *http.Response, u *model.User) error {
 		return err
 	}
 
-	fmt.Println(nationalityInfo.Country)
 	// The first element always has the most probability
 	u.Nationality = nationalityInfo.Country[0].CountryId
 

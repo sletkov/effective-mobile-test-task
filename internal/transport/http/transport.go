@@ -15,6 +15,7 @@ func New(client *http.Client) *Transport {
 	}
 }
 
+// Make GET request by url
 func (t *Transport) Get(ctx context.Context, url string) (*http.Response, error) {
 	response, err := t.client.Get(url)
 
