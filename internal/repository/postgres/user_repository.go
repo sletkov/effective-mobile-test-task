@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/sletkov/effective-mobile-test-task/internal/repository/postgres/model"
 )
@@ -25,7 +26,9 @@ func (r *UserRepository) Get(ctx context.Context, userFilter *model.UserFilter) 
 	user := model.User{}
 	filters := userFilter.GetFilterRequest()
 
-	query := fmt.Sprintf("SELECT id, name, surname, patronymic, age, gender, nationality FROM users WHERE %s LIMIT %d", filters, userFilter.Limit)
+	query := fmt.Sprintf("SELECT id, name, surname, patronymic, age, gender, nationality FROM users %s LIMIT %d", filters, userFilter.Limit)
+
+	slog.Debug("postgres: making db query...")
 
 	rows, err := r.db.QueryContext(
 		ctx,
@@ -61,6 +64,8 @@ func (r *UserRepository) Get(ctx context.Context, userFilter *model.UserFilter) 
 
 // Delete user by id
 func (r *UserRepository) Delete(ctx context.Context, id int) error {
+	slog.Debug("postgres: making db query...")
+
 	if _, err := r.db.ExecContext(
 		ctx,
 		"DELETE FROM users WHERE id = $1",
@@ -74,6 +79,8 @@ func (r *UserRepository) Delete(ctx context.Context, id int) error {
 
 // Update user
 func (r *UserRepository) Update(ctx context.Context, id int, u *model.User) error {
+	slog.Debug("postgres: making db query...")
+
 	if _, err := r.db.ExecContext(
 		ctx,
 		"UPDATE users SET name = $1, surname = $2, patronymic = $3, age = $4, gender = $5, nationality = $6 WHERE id = $7",
@@ -94,6 +101,9 @@ func (r *UserRepository) Update(ctx context.Context, id int, u *model.User) erro
 // Create new user
 func (r *UserRepository) Create(ctx context.Context, u *model.User) (int, error) {
 	var id int
+
+	slog.Debug("postgres: making db query...")
+
 	if err := r.db.QueryRowContext(
 		ctx,
 		"INSERT INTO users (name, surname, patronymic, age, gender, nationality) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
@@ -113,6 +123,8 @@ func (r *UserRepository) Create(ctx context.Context, u *model.User) (int, error)
 // Get user by id
 func (r *UserRepository) GetUserById(ctx context.Context, id int) (*model.User, error) {
 	user := &model.User{}
+
+	slog.Debug("postgres: making db query...")
 
 	if err := r.db.QueryRowContext(
 		ctx,

@@ -1,8 +1,14 @@
 package model
 
 import (
+	"errors"
+
 	validation "github.com/go-ozzo/ozzo-validation"
 	"github.com/go-ozzo/ozzo-validation/is"
+)
+
+var (
+	ErrUserNotFound = errors.New("user not found")
 )
 
 type User struct {

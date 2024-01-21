@@ -3,11 +3,13 @@ package app
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log/slog"
 	"net"
 	"net/http"
 	"os"
 
+	"github.com/ilyakaznacheev/cleanenv"
 	_ "github.com/lib/pq"
 	"github.com/pressly/goose/v3"
 
@@ -19,16 +21,38 @@ import (
 )
 
 // Run application
-func Run(config *config.Config) error {
+func Run(configPath string) error {
+	// Initialize logger
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}))
+
+	slog.SetDefault(logger)
+
+	// Read config from .env
+	slog.Debug("reading config...")
+
+	var config config.Config
+
+	err := cleanenv.ReadConfig(configPath, &config)
+
+	if err != nil {
+		return fmt.Errorf("reading config: %w", err)
+	}
+
+	// Initializa database
+	slog.Debug("initializing database...")
 	db, err := initDB(config.DatabaseURL)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("initializing db: %w", err)
 	}
 
-	// Up migrations
-	if err := goose.Up(db, "../../migrations"); err != nil {
-		return err
+	// Make migrations
+	slog.Debug("making migrations...")
+
+	if err := goose.Up(db, "migrations"); err != nil {
+		return fmt.Errorf("making migrations: %w", err)
 	}
 
 	repo := postgres.New(db)
@@ -37,12 +61,11 @@ func Run(config *config.Config) error {
 
 	service := service.New(repo, transport)
 
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-
-	controller := v1.New(service, *logger)
+	controller := v1.New(service)
 
 	router := controller.InitRoutes(context.Background())
 
+	slog.Debug("starting server...")
 	return http.ListenAndServe(net.JoinHostPort(config.Host, config.Port), router)
 }
 

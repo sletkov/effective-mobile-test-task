@@ -2,6 +2,8 @@ package httptransport
 
 import (
 	"context"
+	"fmt"
+	"log/slog"
 	"net/http"
 )
 
@@ -17,6 +19,8 @@ func New(client *http.Client) *Transport {
 
 // Make GET request by url
 func (t *Transport) Get(ctx context.Context, url string) (*http.Response, error) {
+	slog.DebugContext(ctx, fmt.Sprintf("making GET request to %s", url))
+
 	response, err := t.client.Get(url)
 
 	if err != nil {

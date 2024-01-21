@@ -25,13 +25,13 @@ type UserService interface {
 
 type UserController struct {
 	service UserService
-	logger  slog.Logger
+	// logger  slog.Logger
 }
 
-func New(service UserService, logger slog.Logger) *UserController {
+func New(service UserService) *UserController {
 	return &UserController{
 		service: service,
-		logger:  logger,
+		// logger:  logger,
 	}
 }
 
@@ -105,7 +105,7 @@ func (c *UserController) handleGetUsers(ctx context.Context, r chi.Router) http.
 		}
 
 		if err != nil {
-			c.logger.Error(err.Error())
+			slog.Error(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -113,7 +113,7 @@ func (c *UserController) handleGetUsers(ctx context.Context, r chi.Router) http.
 		data, err := json.Marshal(users)
 
 		if err != nil {
-			c.logger.Error(err.Error())
+			slog.Error(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -129,13 +129,13 @@ func (c *UserController) handleDeleteUser(ctx context.Context) http.HandlerFunc 
 		id, err := strconv.Atoi(chi.URLParam(r, "id"))
 
 		if err != nil {
-			c.logger.Error(err.Error())
+			slog.Error(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
 		if err := c.service.Delete(ctx, id); err != nil {
-			c.logger.Error(err.Error())
+			slog.Error(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -153,6 +153,7 @@ func (c *UserController) handleUpdateUser(ctx context.Context) http.HandlerFunc 
 		id, err := strconv.Atoi(chi.URLParam(r, "id"))
 
 		if err != nil {
+			slog.Error(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -160,7 +161,7 @@ func (c *UserController) handleUpdateUser(ctx context.Context) http.HandlerFunc 
 		data, err := io.ReadAll(r.Body)
 
 		if err != nil {
-			c.logger.Error(err.Error())
+			slog.Error(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -168,7 +169,7 @@ func (c *UserController) handleUpdateUser(ctx context.Context) http.HandlerFunc 
 		err = json.Unmarshal(data, &updateUser)
 
 		if err != nil {
-			c.logger.Error(err.Error())
+			slog.Error(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -179,7 +180,7 @@ func (c *UserController) handleUpdateUser(ctx context.Context) http.HandlerFunc 
 		user := converter.ToUserFromService(u)
 
 		if err != nil {
-			c.logger.Error(err.Error())
+			slog.Error(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -187,7 +188,7 @@ func (c *UserController) handleUpdateUser(ctx context.Context) http.HandlerFunc 
 		updateUser.Copy(user)
 
 		if err := c.service.Update(ctx, id, converter.ToUserFromController(user)); err != nil {
-			c.logger.Error(err.Error())
+			slog.Error(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -204,7 +205,7 @@ func (c *UserController) handleCreateUser(ctx context.Context) http.HandlerFunc 
 		data, err := io.ReadAll(r.Body)
 
 		if err != nil {
-			c.logger.Error(err.Error())
+			slog.Error(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -212,7 +213,7 @@ func (c *UserController) handleCreateUser(ctx context.Context) http.HandlerFunc 
 		err = json.Unmarshal(data, &user)
 
 		if err != nil {
-			c.logger.Error(err.Error())
+			slog.Error(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -221,13 +222,13 @@ func (c *UserController) handleCreateUser(ctx context.Context) http.HandlerFunc 
 		err = user.Validate()
 
 		if err != nil {
-			c.logger.Error(err.Error())
+			slog.Error(err.Error())
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
 		if err := c.service.Create(ctx, converter.ToCreateUserFromController(&user)); err != nil {
-			c.logger.Error(err.Error())
+			slog.Error(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
