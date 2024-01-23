@@ -1,11 +1,11 @@
 package converter
 
 import (
+	"github.com/sletkov/effective-mobile-test-task/internal/domain"
 	repoModel "github.com/sletkov/effective-mobile-test-task/internal/repository/postgres/model"
-	"github.com/sletkov/effective-mobile-test-task/internal/service/model"
 )
 
-func ToUserFromService(user *model.User) *repoModel.User {
+func ToUserFromService(user *domain.User) *repoModel.User {
 	return &repoModel.User{
 		Name:        user.Name,
 		Surname:     user.Surname,
@@ -16,7 +16,7 @@ func ToUserFromService(user *model.User) *repoModel.User {
 	}
 }
 
-func ToUserFilterFromService(userFilter *model.UserFilter) *repoModel.UserFilter {
+func ToUserFilterFromService(userFilter *domain.UserFilter) *repoModel.UserFilter {
 	return &repoModel.UserFilter{
 		Name:        userFilter.Name,
 		Surname:     userFilter.Surname,
@@ -29,8 +29,8 @@ func ToUserFilterFromService(userFilter *model.UserFilter) *repoModel.UserFilter
 	}
 }
 
-func ToUserFromRepo(user *repoModel.User) *model.User {
-	return &model.User{
+func ToUserFromRepo(user *repoModel.User) *domain.User {
+	return &domain.User{
 		Name:        user.Name,
 		Surname:     user.Surname,
 		Patronymic:  user.Patronymic,

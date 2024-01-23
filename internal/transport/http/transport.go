@@ -19,13 +19,17 @@ func New(client *http.Client) *Transport {
 
 // Make GET request by url
 func (t *Transport) Get(ctx context.Context, url string) (*http.Response, error) {
-	slog.DebugContext(ctx, fmt.Sprintf("making GET request to %s", url))
+	slog.InfoContext(ctx, fmt.Sprintf("transport: making GET request to %s", url))
 
 	response, err := t.client.Get(url)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("transport: making get request to %s: %w", url, err)
 	}
+
+	slog.DebugContext(ctx, fmt.Sprintf("transport: got response %v", response))
+
+	slog.InfoContext(ctx, "transport: request was made successfully")
 
 	return response, nil
 }

@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -12,26 +13,26 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/sletkov/effective-mobile-test-task/internal/controller/http/v1/converter"
 	"github.com/sletkov/effective-mobile-test-task/internal/controller/http/v1/model"
-	serviceModel "github.com/sletkov/effective-mobile-test-task/internal/service/model"
+	"github.com/sletkov/effective-mobile-test-task/internal/domain"
 )
 
+//go:generate mockgen -source=controller.go -destination=../../../service/mocks/mock.go
+
 type UserService interface {
-	Get(ctx context.Context, userFilter *serviceModel.UserFilter) ([]serviceModel.User, error)
+	Get(ctx context.Context, userFilter *domain.UserFilter) ([]domain.User, error)
 	Delete(ctx context.Context, id int) error
-	Update(ctx context.Context, id int, u *serviceModel.User) error
-	Create(ctx context.Context, u *serviceModel.User) error
-	GetById(ctx context.Context, id int) (*serviceModel.User, error)
+	Update(ctx context.Context, id int, u *domain.User) error
+	Create(ctx context.Context, u *domain.User) error
+	GetById(ctx context.Context, id int) (*domain.User, error)
 }
 
 type UserController struct {
 	service UserService
-	// logger  slog.Logger
 }
 
 func New(service UserService) *UserController {
 	return &UserController{
 		service: service,
-		// logger:  logger,
 	}
 }
 
@@ -63,46 +64,26 @@ func (c *UserController) handleGetUsers(ctx context.Context, r chi.Router) http.
 	return func(w http.ResponseWriter, r *http.Request) {
 		users := make([]model.User, 0)
 
-		defaultLimit := 10
 		userFilter := &model.UserFilter{}
 
-		values := r.URL.Query()
+		err := userFilter.FillFilters(r.URL.Query())
 
-		for k, v := range values {
-			if len(v) > 0 {
-				switch k {
-				case "name":
-					userFilter.Name = v[0]
-				case "surname":
-					userFilter.Surname = v[0]
-				case "patronymic":
-					userFilter.Patronymic = v[0]
-				case "age_from":
-					value, _ := strconv.Atoi(v[0])
-					userFilter.AgeFrom = value
-				case "age_to":
-					value, _ := strconv.Atoi(v[0])
-					userFilter.AgeTo = value
-				case "gender":
-					userFilter.Gender = v[0]
-				case "nationality":
-					userFilter.Nationality = v[0]
-				case "limit":
-					value, _ := strconv.Atoi(v[0])
-					userFilter.Limit = value
-				}
-			}
+		if err != nil {
+			slog.Error(fmt.Sprintf("controller: %s", err.Error()))
+			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
 
-		if userFilter.Limit <= 0 {
-			userFilter.Limit = defaultLimit
+		// Validate struct
+		err = userFilter.Validate()
+
+		if err != nil {
+			slog.Error(fmt.Sprintf("controller: %s", err.Error()))
+			w.WriteHeader(http.StatusBadRequest)
+			return
 		}
 
 		serviceUsers, err := c.service.Get(ctx, converter.ToUserFilterFromController(userFilter))
-
-		for _, u := range serviceUsers {
-			users = append(users, *converter.ToUserFromService(&u))
-		}
 
 		if err != nil {
 			slog.Error(err.Error())
@@ -110,10 +91,14 @@ func (c *UserController) handleGetUsers(ctx context.Context, r chi.Router) http.
 			return
 		}
 
+		for _, u := range serviceUsers {
+			users = append(users, *converter.ToUserFromService(&u))
+		}
+
 		data, err := json.Marshal(users)
 
 		if err != nil {
-			slog.Error(err.Error())
+			slog.Error(fmt.Sprintf("controller: %s", err.Error()))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -129,8 +114,8 @@ func (c *UserController) handleDeleteUser(ctx context.Context) http.HandlerFunc 
 		id, err := strconv.Atoi(chi.URLParam(r, "id"))
 
 		if err != nil {
-			slog.Error(err.Error())
-			w.WriteHeader(http.StatusInternalServerError)
+			slog.Error(fmt.Sprintf("controller: %s", err.Error()))
+			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
@@ -153,34 +138,51 @@ func (c *UserController) handleUpdateUser(ctx context.Context) http.HandlerFunc 
 		id, err := strconv.Atoi(chi.URLParam(r, "id"))
 
 		if err != nil {
-			slog.Error(err.Error())
-			w.WriteHeader(http.StatusInternalServerError)
+			slog.Error(fmt.Sprintf("controller: %s", err.Error()))
+			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
 		data, err := io.ReadAll(r.Body)
 
 		if err != nil {
-			slog.Error(err.Error())
+			slog.Error(fmt.Sprintf("controller: %s", err.Error()))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
 		err = json.Unmarshal(data, &updateUser)
 
+		slog.Debug(fmt.Sprintf("controller: got structure: %v", updateUser))
+
+		if err != nil {
+			slog.Error(fmt.Sprintf("controller: %s", err.Error()))
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		// Validate struct
+		err = updateUser.Validate()
+
+		if err != nil {
+			slog.Error(fmt.Sprintf("controller: %s", err.Error()))
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		u, err := c.service.GetById(ctx, id)
+
 		if err != nil {
 			slog.Error(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		u, err := c.service.GetById(ctx, id)
-
 		// Convert from service to controller
 		user := converter.ToUserFromService(u)
 
 		if err != nil {
-			slog.Error(err.Error())
+			slog.Error(fmt.Sprintf("controller: %s", err.Error()))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -205,15 +207,17 @@ func (c *UserController) handleCreateUser(ctx context.Context) http.HandlerFunc 
 		data, err := io.ReadAll(r.Body)
 
 		if err != nil {
-			slog.Error(err.Error())
+			slog.Error(fmt.Sprintf("controller: %s", err.Error()))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
 		err = json.Unmarshal(data, &user)
 
+		slog.Debug(fmt.Sprintf("controller: got structure: %v", user))
+
 		if err != nil {
-			slog.Error(err.Error())
+			slog.Error(fmt.Sprintf("controller: %s", err.Error()))
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -222,7 +226,7 @@ func (c *UserController) handleCreateUser(ctx context.Context) http.HandlerFunc 
 		err = user.Validate()
 
 		if err != nil {
-			slog.Error(err.Error())
+			slog.Error(fmt.Sprintf("controller: %s", err.Error()))
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}

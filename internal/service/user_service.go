@@ -4,10 +4,13 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/sletkov/effective-mobile-test-task/internal/converter"
+	"github.com/sletkov/effective-mobile-test-task/internal/domain"
+	utils "github.com/sletkov/effective-mobile-test-task/internal/pkg"
 	repoModel "github.com/sletkov/effective-mobile-test-task/internal/repository/postgres/model"
-	"github.com/sletkov/effective-mobile-test-task/internal/service/converter"
-	"github.com/sletkov/effective-mobile-test-task/internal/service/model"
 )
+
+//go:generate mockgen -source=user_service.go -destination=../repository/postgres/mocks/mock.go
 
 type UserRepository interface {
 	Get(ctx context.Context, userFilter *repoModel.UserFilter) ([]repoModel.User, error)
@@ -34,8 +37,8 @@ func New(repository UserRepository, transport Transport) *UserService {
 }
 
 // Get all users with filters and limit
-func (s *UserService) Get(ctx context.Context, userFilter *model.UserFilter) ([]model.User, error) {
-	users := make([]model.User, 0)
+func (s *UserService) Get(ctx context.Context, userFilter *domain.UserFilter) ([]domain.User, error) {
+	users := make([]domain.User, 0)
 
 	repoUsers, err := s.repository.Get(ctx, converter.ToUserFilterFromService(userFilter))
 
@@ -62,7 +65,7 @@ func (s *UserService) Delete(ctx context.Context, id int) error {
 }
 
 // Update user
-func (s *UserService) Update(ctx context.Context, id int, u *model.User) error {
+func (s *UserService) Update(ctx context.Context, id int, u *domain.User) error {
 	err := s.repository.Update(ctx, id, converter.ToUserFromService(u))
 
 	if err != nil {
@@ -73,7 +76,7 @@ func (s *UserService) Update(ctx context.Context, id int, u *model.User) error {
 }
 
 // Create new user
-func (s *UserService) Create(ctx context.Context, u *model.User) error {
+func (s *UserService) Create(ctx context.Context, u *domain.User) error {
 
 	// Get response from 3rd-party api
 	ageResponse, err := s.transport.Get(ctx, "https://api.agify.io/?name="+u.Name)
@@ -83,7 +86,7 @@ func (s *UserService) Create(ctx context.Context, u *model.User) error {
 	}
 
 	// Add age to user
-	if err := Agify(ageResponse, u); err != nil {
+	if err := utils.Agify(ageResponse, u); err != nil {
 		return err
 	}
 
@@ -95,7 +98,7 @@ func (s *UserService) Create(ctx context.Context, u *model.User) error {
 	}
 
 	// Add gender to user
-	if err := Genderize(genderResponse, u); err != nil {
+	if err := utils.Genderize(genderResponse, u); err != nil {
 		return err
 	}
 
@@ -107,7 +110,7 @@ func (s *UserService) Create(ctx context.Context, u *model.User) error {
 	}
 
 	// Add nationality to user
-	if err := Nationalize(nationalityResponse, u); err != nil {
+	if err := utils.Nationalize(nationalityResponse, u); err != nil {
 		return err
 	}
 
@@ -121,7 +124,7 @@ func (s *UserService) Create(ctx context.Context, u *model.User) error {
 	return nil
 }
 
-func (s *UserService) GetById(ctx context.Context, id int) (*model.User, error) {
+func (s *UserService) GetById(ctx context.Context, id int) (*domain.User, error) {
 	user, err := s.repository.GetUserById(ctx, id)
 
 	if err != nil {

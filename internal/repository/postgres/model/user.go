@@ -71,9 +71,5 @@ func (u *UserFilter) GetFilterRequest() string {
 
 	result := strings.Join(slice, " AND ")
 
-	if result != "" {
-		result = "WHERE " + result
-	}
-
 	return result
 }

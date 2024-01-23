@@ -13,7 +13,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/pressly/goose/v3"
 
-	"github.com/sletkov/effective-mobile-test-task/config"
+	"github.com/sletkov/effective-mobile-test-task/internal/config"
 	v1 "github.com/sletkov/effective-mobile-test-task/internal/controller/http/v1"
 	"github.com/sletkov/effective-mobile-test-task/internal/repository/postgres"
 	"github.com/sletkov/effective-mobile-test-task/internal/service"
@@ -31,7 +31,7 @@ func Run(configPath string, makeMigrations, dropMigrations bool) error {
 	slog.SetDefault(logger)
 
 	// Read config from .env
-	slog.Debug("reading config...")
+	slog.Info("reading config")
 
 	var config config.Config
 
@@ -41,29 +41,38 @@ func Run(configPath string, makeMigrations, dropMigrations bool) error {
 		return fmt.Errorf("reading config: %w", err)
 	}
 
+	slog.Info("config was read successfully")
+
 	// Initialize database
-	slog.Debug("initializing database...")
+	slog.Info("initializing db")
 	db, err := initDB(config.DatabaseURL)
 
 	if err != nil {
 		return fmt.Errorf("initializing db: %w", err)
 	}
 
+	slog.Info("db was initialized successfully")
+
 	// Migrations control
 	if makeMigrations {
 		// Make migrations
-		slog.Debug("making migrations...")
+		slog.Info("making migrations")
 
 		if err := goose.Up(db, "migrations"); err != nil {
 			return fmt.Errorf("making migrations: %w", err)
 		}
+
+		slog.Info("migrations were made successfully")
+
 	} else if dropMigrations {
 		// Rollback migrations
-		slog.Debug("rollback migrations...")
+		slog.Info("rollback migrations")
 
 		if err := goose.Down(db, "migrations"); err != nil {
 			return fmt.Errorf("making migrations: %w", err)
 		}
+
+		slog.Info("migrations were rollbacked successfully")
 	}
 
 	repo := postgres.New(db)
@@ -76,7 +85,7 @@ func Run(configPath string, makeMigrations, dropMigrations bool) error {
 
 	router := controller.InitRoutes(context.Background())
 
-	slog.Debug("starting server...")
+	slog.Debug(fmt.Sprintf("http server started on port: %s", config.Port))
 
 	return http.ListenAndServe(net.JoinHostPort(config.Host, config.Port), router)
 }

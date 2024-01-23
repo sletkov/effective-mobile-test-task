@@ -2,19 +2,20 @@ package converter
 
 import (
 	"github.com/sletkov/effective-mobile-test-task/internal/controller/http/v1/model"
-	serviceModel "github.com/sletkov/effective-mobile-test-task/internal/service/model"
+	"github.com/sletkov/effective-mobile-test-task/internal/domain"
 )
 
-func ToCreateUserFromController(user *model.CreateUser) *serviceModel.User {
-	return &serviceModel.User{
+// refactor
+func ToCreateUserFromController(user *model.CreateUser) *domain.User {
+	return &domain.User{
 		Name:       user.Name,
 		Surname:    user.Surname,
 		Patronymic: user.Patronymic,
 	}
 }
 
-func ToUpdateUserFromController(user *model.UpdateUser) *serviceModel.User {
-	return &serviceModel.User{
+func ToUpdateUserFromController(user *model.UpdateUser) *domain.UpdateUser {
+	return &domain.UpdateUser{
 		Name:        user.Name,
 		Surname:     user.Surname,
 		Patronymic:  user.Patronymic,
@@ -24,8 +25,8 @@ func ToUpdateUserFromController(user *model.UpdateUser) *serviceModel.User {
 	}
 }
 
-func ToUserFromController(user *model.User) *serviceModel.User {
-	return &serviceModel.User{
+func ToUserFromController(user *model.User) *domain.User {
+	return &domain.User{
 		Id:          user.Id,
 		Name:        user.Name,
 		Surname:     user.Surname,
@@ -36,8 +37,8 @@ func ToUserFromController(user *model.User) *serviceModel.User {
 	}
 }
 
-func ToUserFilterFromController(userFilter *model.UserFilter) *serviceModel.UserFilter {
-	return &serviceModel.UserFilter{
+func ToUserFilterFromController(userFilter *model.UserFilter) *domain.UserFilter {
+	return &domain.UserFilter{
 		Name:        userFilter.Name,
 		Surname:     userFilter.Surname,
 		Patronymic:  userFilter.Patronymic,
@@ -49,7 +50,7 @@ func ToUserFilterFromController(userFilter *model.UserFilter) *serviceModel.User
 	}
 }
 
-func ToUserFromService(user *serviceModel.User) *model.User {
+func ToUserFromService(user *domain.User) *model.User {
 	return &model.User{
 		Id:          user.Id,
 		Name:        user.Name,

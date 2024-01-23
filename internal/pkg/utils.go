@@ -1,15 +1,15 @@
-package service
+package utils
 
 import (
 	"encoding/json"
 	"io"
 	"net/http"
 
-	"github.com/sletkov/effective-mobile-test-task/internal/service/model"
+	"github.com/sletkov/effective-mobile-test-task/internal/domain"
 )
 
 // Add age to user by data from 3rd-party api response
-func Agify(ageResponse *http.Response, u *model.User) error {
+func Agify(ageResponse *http.Response, u *domain.User) error {
 	var ageInfo = struct {
 		Count int    `json:"count"`
 		Name  string `json:"name"`
@@ -32,7 +32,7 @@ func Agify(ageResponse *http.Response, u *model.User) error {
 }
 
 // Add gender to user by data from 3rd-party api response
-func Genderize(genderResponse *http.Response, u *model.User) error {
+func Genderize(genderResponse *http.Response, u *domain.User) error {
 	var genderInfo = struct {
 		Count       int     `json:"count"`
 		Name        string  `json:"name"`
@@ -56,7 +56,7 @@ func Genderize(genderResponse *http.Response, u *model.User) error {
 }
 
 // Add nationality to user by data from 3rd-party api response
-func Nationalize(genderResponse *http.Response, u *model.User) error {
+func Nationalize(genderResponse *http.Response, u *domain.User) error {
 	var nationalityInfo = struct {
 		Count   int    `json:"count"`
 		Name    string `json:"name"`
