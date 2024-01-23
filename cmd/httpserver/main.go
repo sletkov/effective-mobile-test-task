@@ -23,6 +23,13 @@ func init() {
 	flag.Parse()
 }
 
+// @title HTTP server
+// @version 1.0
+// @description HTTP Server for saving users
+
+// @host localhost:9999
+// @BasePath /api/v1/users
+
 func main() {
 	// Run server
 	err := app.Run(configPath, makeMigrations, dropMigrations)

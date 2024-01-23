@@ -59,7 +59,23 @@ func (c *UserController) InitRoutes(ctx context.Context) chi.Router {
 	return r
 }
 
-// Get all users with filters and limit
+// @Summary GetUsers
+// @Tags users
+// @Description get all users with filters and limit
+// @ID get-users
+// @Produce json
+// @Param name query string false "name filter"
+// @Param surname query string false "surname filter"
+// @Param patronymic query string false "patronymic filter"
+// @Param age_from query integer false "min age filter"
+// @Param age_to query integer false "max age filter"
+// @Param gender query string false "gender filter"
+// @Param nationality query string false "nationality filter"
+// @Param limit query integer false "limit"
+// @Success 200
+// @Failure 400
+// @Failure 500
+// @Router /api/v1/users [get]
 func (c *UserController) handleGetUsers(ctx context.Context, r chi.Router) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		users := make([]model.User, 0)
@@ -108,7 +124,15 @@ func (c *UserController) handleGetUsers(ctx context.Context, r chi.Router) http.
 	}
 }
 
-// Delete user by id
+// @Summary DeleteUser
+// @Tags users
+// @Description delete user by id
+// @ID delete-user
+// @Param id path integer true "user id"
+// @Success 200
+// @Failure 400
+// @Failure 500
+// @Router /api/v1/users/{id} [delete]
 func (c *UserController) handleDeleteUser(ctx context.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := strconv.Atoi(chi.URLParam(r, "id"))
@@ -129,7 +153,22 @@ func (c *UserController) handleDeleteUser(ctx context.Context) http.HandlerFunc 
 	}
 }
 
-// Update user
+// @Summary UpdateUser
+// @Tags users
+// @Description update user
+// @ID update-user
+// @Accept json
+// @Param id path integer true "user id"
+// @Param name body string false "user name"
+// @Param surname body string false "user surname"
+// @Param patronymic body string false "user patronymic"
+// @Param age body integer false "user age"
+// @Param gender body string false "user gender"
+// @Param nationality body string false "user nationality"
+// @Success 200
+// @Failure 400
+// @Failure 500
+// @Router /api/v1/users/{id} [patch]
 func (c *UserController) handleUpdateUser(ctx context.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -199,7 +238,18 @@ func (c *UserController) handleUpdateUser(ctx context.Context) http.HandlerFunc 
 	}
 }
 
-// Create user
+// @Summary CreateUser
+// @Tags users
+// @Description create user
+// @ID create-user
+// @Accept json
+// @Param name body string true "user name"
+// @Param surname body string true "user surname"
+// @Param patronymic body string false "user patronymic"
+// @Success 200
+// @Failure 400
+// @Failure 500
+// @Router /api/v1/users [post]
 func (c *UserController) handleCreateUser(ctx context.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var user model.CreateUser

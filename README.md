@@ -8,10 +8,6 @@ make build && make run
 
 ## Description
 
-### Swagger
-
-[Ссылка на Swagger](http://localhost:8080/swagger)
-
 ### Methods
 
 ---

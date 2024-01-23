@@ -1,0 +1,162 @@
+basePath: /api/v1/users
+host: localhost:9999
+info:
+  contact: {}
+  description: HTTP Server for saving users
+  title: HTTP server
+  version: "1.0"
+paths:
+  /api/v1/users:
+    get:
+      description: get all users with filters and limit
+      operationId: get-users
+      parameters:
+      - description: name filter
+        in: query
+        name: name
+        type: string
+      - description: surname filter
+        in: query
+        name: surname
+        type: string
+      - description: patronymic filter
+        in: query
+        name: patronymic
+        type: string
+      - description: min age filter
+        in: query
+        name: age_from
+        type: integer
+      - description: max age filter
+        in: query
+        name: age_to
+        type: integer
+      - description: gender filter
+        in: query
+        name: gender
+        type: string
+      - description: nationality filter
+        in: query
+        name: nationality
+        type: string
+      - description: limit
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
+      summary: GetUsers
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      description: create user
+      operationId: create-user
+      parameters:
+      - description: user name
+        in: body
+        name: name
+        required: true
+        schema:
+          type: string
+      - description: user surname
+        in: body
+        name: surname
+        required: true
+        schema:
+          type: string
+      - description: user patronymic
+        in: body
+        name: patronymic
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
+      summary: CreateUser
+      tags:
+      - users
+  /api/v1/users/{id}:
+    delete:
+      description: delete user by id
+      operationId: delete-user
+      parameters:
+      - description: user id
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
+      summary: DeleteUser
+      tags:
+      - users
+    patch:
+      consumes:
+      - application/json
+      description: update user
+      operationId: update-user
+      parameters:
+      - description: user id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: user name
+        in: body
+        name: name
+        schema:
+          type: string
+      - description: user surname
+        in: body
+        name: surname
+        schema:
+          type: string
+      - description: user patronymic
+        in: body
+        name: patronymic
+        schema:
+          type: string
+      - description: user age
+        in: body
+        name: age
+        schema:
+          type: integer
+      - description: user gender
+        in: body
+        name: gender
+        schema:
+          type: string
+      - description: user nationality
+        in: body
+        name: nationality
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
+      summary: UpdateUser
+      tags:
+      - users
+swagger: "2.0"
